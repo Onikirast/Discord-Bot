@@ -1,0 +1,19 @@
+# Secrets — never commit your real token
+.env
+
+# Local database (contains user data; regenerated automatically)
+bot.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Editor/OS cruft
+.vscode/
+.idea/
+.DS_Store
