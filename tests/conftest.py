@@ -26,3 +26,4 @@ async def temp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(database, "DB_PATH", str(db_file))
     await database.init_db()
     yield database
+    await database.close_db()

@@ -6,7 +6,7 @@ need no fixtures -- just call the functions directly and assert on
 what comes back.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -17,20 +17,20 @@ from time_utils import parse_when, parse_hhmm, parse_day, TimeParseError
 
 def test_parse_when_hours():
     result = parse_when("2h")
-    expected = datetime.utcnow() + timedelta(hours=2)
+    expected = datetime.now(timezone.utc) + timedelta(hours=2)
     # Allow a couple of seconds of slack for the time the test itself takes to run.
     assert abs((result - expected).total_seconds()) < 3
 
 
 def test_parse_when_minutes():
     result = parse_when("30m")
-    expected = datetime.utcnow() + timedelta(minutes=30)
+    expected = datetime.now(timezone.utc) + timedelta(minutes=30)
     assert abs((result - expected).total_seconds()) < 3
 
 
 def test_parse_when_combined_days_hours():
     result = parse_when("1d12h")
-    expected = datetime.utcnow() + timedelta(days=1, hours=12)
+    expected = datetime.now(timezone.utc) + timedelta(days=1, hours=12)
     assert abs((result - expected).total_seconds()) < 3
 
 
@@ -45,7 +45,14 @@ def test_parse_when_zero_duration_rejected():
 
 def test_parse_when_absolute():
     result = parse_when("2026-08-01 14:30")
-    assert result == datetime(2026, 8, 1, 14, 30)
+    assert result == datetime(2026, 8, 1, 14, 30, tzinfo=timezone.utc)
+
+
+def test_parse_when_absolute_is_timezone_aware():
+    # Both branches of parse_when must agree on being timezone-aware --
+    # a mismatch here would silently corrupt comparisons once stored.
+    result = parse_when("2026-08-01 14:30")
+    assert result.tzinfo == timezone.utc
 
 
 def test_parse_when_garbage_input_rejected():

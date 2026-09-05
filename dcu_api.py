@@ -57,18 +57,46 @@ class DCUAPIError(Exception):
     """Raised when the Scientia API returns an error response."""
 
 
+_session: aiohttp.ClientSession | None = None
+
+
+def _get_session() -> aiohttp.ClientSession:
+    """Return the shared session, creating it on first use.
+
+    aiohttp's own docs recommend one ClientSession per application
+    lifetime rather than one per request -- a session holds a connection
+    pool that enables keep-alive reuse to the same host, which matters
+    here since every single call in this module hits the same Scientia
+    endpoint. Creating a fresh session per call (the previous approach)
+    throws that reuse away every time.
+    """
+    global _session
+    if _session is None or _session.closed:
+        _session = aiohttp.ClientSession()
+    return _session
+
+
+async def close_session():
+    """Close the shared session. Call this on bot shutdown to avoid an
+    'Unclosed client session' warning."""
+    global _session
+    if _session is not None and not _session.closed:
+        await _session.close()
+        _session = None
+
+
 async def _post(path: str, params: dict[str, str] | None = None,
                  json_data: dict[str, Any] | None = None) -> Any:
     url = f"{BASE_URL}/{path}"
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            url, params=params, json=json_data, headers=HEADERS,
-            timeout=aiohttp.ClientTimeout(total=15),
-        ) as resp:
-            if resp.status != 200:
-                text = (await resp.text())[:300]  # truncate: never dump a full error page
-                raise DCUAPIError(f"Request failed ({resp.status}): {text}")
-            return await resp.json()
+    session = _get_session()
+    async with session.post(
+        url, params=params, json=json_data, headers=HEADERS,
+        timeout=aiohttp.ClientTimeout(total=15),
+    ) as resp:
+        if resp.status != 200:
+            text = (await resp.text())[:300]  # truncate: never dump a full error page
+            raise DCUAPIError(f"Request failed ({resp.status}): {text}")
+        return await resp.json()
 
 
 async def search_category(category_type: CategoryType, query: str) -> list[dict[str, Any]]:

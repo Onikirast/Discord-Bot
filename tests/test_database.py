@@ -6,7 +6,7 @@ points database.py at a fresh, throwaway SQLite file -- so these tests
 never touch the real bot.db, and each test starts from a clean slate.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import database
 
@@ -16,7 +16,7 @@ import database
 async def test_add_and_list_reminder(temp_db):
     await database.add_reminder(
         user_id=1, channel_id=100, message="test reminder",
-        remind_at=datetime.utcnow() + timedelta(hours=1),
+        remind_at=datetime.now(timezone.utc) + timedelta(hours=1),
     )
     reminders = await database.list_reminders(user_id=1)
     assert len(reminders) == 1
@@ -27,9 +27,9 @@ async def test_add_and_list_reminder(temp_db):
 async def test_due_reminder_is_found_when_past_due(temp_db):
     await database.add_reminder(
         user_id=1, channel_id=100, message="overdue",
-        remind_at=datetime.utcnow() - timedelta(minutes=5),
+        remind_at=datetime.now(timezone.utc) - timedelta(minutes=5),
     )
-    due = await database.get_due_reminders(datetime.utcnow())
+    due = await database.get_due_reminders(datetime.now(timezone.utc))
     assert len(due) == 1
     assert due[0]["message"] == "overdue"
 
@@ -37,24 +37,24 @@ async def test_due_reminder_is_found_when_past_due(temp_db):
 async def test_future_reminder_is_not_due_yet(temp_db):
     await database.add_reminder(
         user_id=1, channel_id=100, message="not yet",
-        remind_at=datetime.utcnow() + timedelta(hours=1),
+        remind_at=datetime.now(timezone.utc) + timedelta(hours=1),
     )
-    due = await database.get_due_reminders(datetime.utcnow())
+    due = await database.get_due_reminders(datetime.now(timezone.utc))
     assert due == []
 
 
 async def test_once_reminder_closes_after_firing(temp_db):
     reminder_id = await database.add_reminder(
         user_id=1, channel_id=100, message="one-off",
-        remind_at=datetime.utcnow() - timedelta(minutes=1), recurrence="once",
+        remind_at=datetime.now(timezone.utc) - timedelta(minutes=1), recurrence="once",
     )
-    await database.reschedule_or_close_reminder(reminder_id, "once", datetime.utcnow())
+    await database.reschedule_or_close_reminder(reminder_id, "once", datetime.now(timezone.utc))
     # A closed 'once' reminder should no longer appear in the pending list.
     assert await database.list_reminders(user_id=1) == []
 
 
 async def test_daily_reminder_reschedules_forward_one_day(temp_db):
-    original_time = datetime.utcnow() - timedelta(minutes=1)
+    original_time = datetime.now(timezone.utc) - timedelta(minutes=1)
     reminder_id = await database.add_reminder(
         user_id=1, channel_id=100, message="daily", remind_at=original_time, recurrence="daily",
     )
@@ -67,7 +67,7 @@ async def test_daily_reminder_reschedules_forward_one_day(temp_db):
 
 async def test_delete_reminder(temp_db):
     reminder_id = await database.add_reminder(
-        user_id=1, channel_id=100, message="delete me", remind_at=datetime.utcnow(),
+        user_id=1, channel_id=100, message="delete me", remind_at=datetime.now(timezone.utc),
     )
     assert await database.delete_reminder(user_id=1, reminder_id=reminder_id) is True
     assert await database.list_reminders(user_id=1) == []
@@ -78,8 +78,8 @@ async def test_delete_nonexistent_reminder_returns_false(temp_db):
 
 
 async def test_reminder_belongs_to_correct_user_only(temp_db):
-    await database.add_reminder(user_id=1, channel_id=100, message="mine", remind_at=datetime.utcnow())
-    await database.add_reminder(user_id=2, channel_id=100, message="not mine", remind_at=datetime.utcnow())
+    await database.add_reminder(user_id=1, channel_id=100, message="mine", remind_at=datetime.now(timezone.utc))
+    await database.add_reminder(user_id=2, channel_id=100, message="not mine", remind_at=datetime.now(timezone.utc))
     assert len(await database.list_reminders(user_id=1)) == 1
     assert len(await database.list_reminders(user_id=2)) == 1
 

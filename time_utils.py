@@ -12,7 +12,7 @@ mentioned in the README is per-user timezone support via `zoneinfo`.
 """
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 RELATIVE_PATTERN = re.compile(
     r"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?$", re.IGNORECASE
@@ -24,7 +24,15 @@ class TimeParseError(ValueError):
 
 
 def parse_when(text: str) -> datetime:
-    """Return a UTC datetime for the given input string, or raise TimeParseError."""
+    """Return a timezone-aware UTC datetime for the given input string, or
+    raise TimeParseError.
+
+    Both branches below must produce the same (aware) shape consistently:
+    these values ultimately get stored as ISO strings and compared as
+    plain TEXT in SQL, so a naive datetime from one branch and an aware
+    one from the other would silently produce wrong comparisons rather
+    than an error.
+    """
     text = text.strip()
 
     # Try relative shorthand first, e.g. "2h", "30m", "1d12h"
@@ -34,12 +42,12 @@ def parse_when(text: str) -> datetime:
         delta = timedelta(days=days, hours=hours, minutes=minutes)
         if delta.total_seconds() <= 0:
             raise TimeParseError("Duration must be greater than zero.")
-        return datetime.utcnow() + delta
+        return datetime.now(timezone.utc) + delta
 
-    # Fall back to absolute "YYYY-MM-DD HH:MM"
+    # Fall back to absolute "YYYY-MM-DD HH:MM", interpreted as UTC
     try:
         dt = datetime.strptime(text, "%Y-%m-%d %H:%M")
-        return dt
+        return dt.replace(tzinfo=timezone.utc)
     except ValueError as e:
         raise TimeParseError(
             "Couldn't understand that time. Use something like '2h', '30m', "

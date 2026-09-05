@@ -13,7 +13,7 @@ adds a dependency and setup complexity that isn't needed at this scale).
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from discord.ext import tasks
 
@@ -41,7 +41,7 @@ def setup_scheduler(bot):
 
 
 async def _check_reminders(bot):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     due = await database.get_due_reminders(now)
 
     for reminder in due:
@@ -64,7 +64,7 @@ async def _check_reminders(bot):
 
 
 async def _check_timetable(bot):
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     today_index = now.weekday()  # Monday=0 ... Sunday=6
     today_str = now.strftime("%Y-%m-%d")
 
@@ -72,7 +72,10 @@ async def _check_timetable(bot):
 
     for entry in entries:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
-        start_dt = datetime.combine(now.date(), start_time)
+        # tzinfo must be passed explicitly here -- datetime.combine() produces
+        # a naive datetime by default, which would raise a TypeError when
+        # compared against the timezone-aware `now` below.
+        start_dt = datetime.combine(now.date(), start_time, tzinfo=timezone.utc)
         notify_at = start_dt - timedelta(minutes=entry["notify_before_minutes"])
 
         # Fire once we're within the current check window past notify_at,

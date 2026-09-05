@@ -14,6 +14,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 import database
+import dcu_api
 from scheduler_loop import setup_scheduler
 
 load_dotenv()
@@ -46,6 +47,15 @@ class DiscordBot(commands.Bot):
             logger.info(f"Synced {len(synced)} slash commands")
         except Exception:
             logger.exception("Failed to sync slash commands")
+
+    async def close(self) -> None:
+        # Runs on shutdown (Ctrl+C, or bot.close()). Releases the shared
+        # DB connection and HTTP session cleanly instead of leaving them
+        # to be garbage-collected, which would otherwise print an
+        # "Unclosed client session" warning for the aiohttp session.
+        await database.close_db()
+        await dcu_api.close_session()
+        await super().close()
 
 
 bot = DiscordBot(command_prefix="!", intents=intents)

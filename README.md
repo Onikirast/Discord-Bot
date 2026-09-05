@@ -1,5 +1,7 @@
 # Discord Reminders & Timetable Bot
 
+![Tests](https://github.com/Onikirast/Discord-Bot/actions/workflows/tests.yml/badge.svg)
+
 A personal Discord bot for reminders and a recurring weekly timetable,
 built with `discord.py` and a lightweight async SQLite backend.
 
@@ -128,6 +130,20 @@ Deliberately not covered: anything requiring a live Discord connection or a real
 - **Notification dedup log**: `timetable_notifications` records
   `(entry_id, date)` pairs so a restart mid-day doesn't cause duplicate
   pings for the same entry.
+- **Shared connection/session over per-call creation**: a single SQLite
+  connection and a single `aiohttp` session are opened once at startup
+  and reused for every query/request, rather than opening a fresh one
+  per call. Real recurring cost given the scheduler polls every 30s
+  indefinitely -- see `DEBUGGING_LOG.md` entry #15 for the details and
+  what actually broke while fixing it.
+- **Timezone-aware timestamps throughout**: `datetime.utcnow()` (deprecated
+  by Python) has been replaced with `datetime.now(timezone.utc)`
+  consistently across every call site that produces a stored timestamp.
+  **If you have an existing `bot.db` from before this change, delete it**
+  -- old rows are in a naive timestamp format that doesn't compare
+  correctly against new aware-format rows in the same column. `bot.db`
+  is gitignored and regenerates automatically, so this is a one-time
+  `rm bot.db` rather than a migration to write.
 
 ## Possible extensions
 
