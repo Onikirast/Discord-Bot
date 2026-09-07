@@ -114,7 +114,7 @@ pytest
 
 Deliberately not covered: anything requiring a live Discord connection or a real network call to DCU's API — those stay manually tested, since mocking them thoroughly is a bigger undertaking than this pass covers.
 
-## Design decisions (for the CV writeup)
+## Design decisions
 
 - **Polling loop over per-item timers**: a single `tasks.loop` checks the
   database every 30s for due reminders/timetable entries. This trades a
