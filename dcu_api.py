@@ -49,7 +49,7 @@ CATEGORY_TYPE_IDS: dict[CategoryType, str] = {
 HEADERS = {
     "Authorization": "Anonymous",
     "Content-Type": "application/json",
-    "User-Agent": "PersonalDiscordBot/1.0 (student CV project; not affiliated with DCU/Redbrick)",
+    "User-Agent": "PersonalDiscordBot/1.0 (personal student project; not affiliated with DCU/Redbrick)",
 }
 
 
