@@ -1,6 +1,6 @@
 Debugging Log
 
-A chronological record of every real bug found and fixed while building and testing this bot. Kept for two reasons: to make the project easy to pick back up later, and because a documented debugging process is worth showing on a CV in its own right — it demonstrates real problem-solving, not just a finished result.
+A chronological record of every real bug found and fixed while building and testing this bot. 
 
 Real code bugs found and fixed
 1. Missing tzdata package on Windows
