@@ -18,11 +18,6 @@ which is the library that bot imports directly (not over HTTP).
 This endpoint is public and needs no real authentication -- just an
 `Authorization: Anonymous` header. The category-type UUIDs and payload
 field names below are taken directly from that source, not guessed.
-
-One honest caveat: like the Redbrick API, this hasn't been tested against
-a live network from the environment this bot was scaffolded in. It's
-built against a verified, working reference implementation rather than
-guesswork, but you should still smoke-test it for real.
 """
 
 import datetime
